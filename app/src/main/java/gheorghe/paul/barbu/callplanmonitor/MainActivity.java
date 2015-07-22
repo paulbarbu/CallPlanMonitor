@@ -1,8 +1,13 @@
 package gheorghe.paul.barbu.callplanmonitor;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.CallLog;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -13,6 +18,11 @@ import java.util.Calendar;
 
 
 public class MainActivity extends ActionBarActivity {
+    static final int TOTAL = 275;
+    static final int WARNING = 225;
+    static final String WARNING_TEXT = "ATENTIE! " + WARNING + " minute vorbite!";
+    static final String NOTIF_TITLE = "Minute nationale!";
+    StringBuilder sb = new StringBuilder();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,9 +30,39 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
 
         //TODO: setNotificationUri
-        //TODO: get the SMSes and subtract them
-        //TODO: limit by date
 
+        if(sb.length() == 0) {
+            inspectCallData();
+        }
+
+        TextView tv = (TextView) findViewById(R.id.textview);
+
+        tv.setText(sb.toString());
+
+    }
+
+    protected void showNotif()
+    {
+        Intent openMain = new Intent(this, MainActivity.class);
+        TaskStackBuilder backStack = TaskStackBuilder.create(this);
+        backStack.addParentStack(MainActivity.class);
+        backStack.addNextIntent(openMain);
+
+        PendingIntent notifIntent = backStack.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationCompat.Builder notifBuilder = new NotificationCompat.Builder(this)
+                .setContentTitle(NOTIF_TITLE)
+                .setContentText(WARNING_TEXT)
+                .setSmallIcon(R.drawable.ic_warning_black_24dp)
+                .setContentIntent(notifIntent);
+
+        NotificationManager notifManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        notifManager.notify(16, notifBuilder.build());
+    }
+
+    protected void inspectCallData()
+    {
+        sb.delete(0, sb.length());
         Calendar cal = Calendar.getInstance();
         if(cal.get(Calendar.DAY_OF_MONTH) < 14) {
             cal.add(Calendar.MONTH, -1);
@@ -33,13 +73,7 @@ public class MainActivity extends ActionBarActivity {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 1);
 
-        final int TOTAL = 275;
-        final int WARNING = 225;
-
         double sum = 0;
-
-        TextView tv = (TextView) findViewById(R.id.textview);
-
         Uri allCalls = Uri.parse("content://call_log/calls");
         Cursor c = getContentResolver().query(allCalls,
                 new String[]{CallLog.Calls.NUMBER, CallLog.Calls.DURATION, CallLog.Calls.TYPE},
@@ -52,8 +86,6 @@ public class MainActivity extends ActionBarActivity {
         int durationIndex = c.getColumnIndex(CallLog.Calls.DURATION);
         int typeIndex = c.getColumnIndex(CallLog.Calls.TYPE);
         int numberIndex= c.getColumnIndex(CallLog.Calls.NUMBER);
-
-        StringBuffer sb = new StringBuffer();
 
         while(c.moveToNext())
         {
@@ -76,37 +108,15 @@ public class MainActivity extends ActionBarActivity {
             }
         }
 
+        c.close();
+
         sb.insert(0, sum + " minute nationale consumate din " + TOTAL + " de la data: " + cal.getTime().toString() + "\n");
 
         if(sum >= WARNING)
         {
-            sb.insert(0, "ATENTIE! " + WARNING + " minute vorbite!\n\n");
+            sb.insert(0, WARNING_TEXT + "\n\n");
+
+            showNotif();
         }
-
-        tv.setText(sb.toString());
-
-        c.close();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 }
