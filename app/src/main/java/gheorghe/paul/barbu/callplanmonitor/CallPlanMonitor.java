@@ -95,6 +95,7 @@ public class CallPlanMonitor {
                             && !number.startsWith("+4072"))
                     {
                         sum += realDuration;
+                        sb.append("\n " + number + ": " + realDuration);
                     }
                 }
                 else {
@@ -105,13 +106,13 @@ public class CallPlanMonitor {
                         // the rest will not be billed by the carrier since it's a local number
                         // and the 25 (special) minutes are exhausted now
                         sum = 25;
+                        sb.append("\n " + number + ": " + (25 - sum));
                     }
                     else { // otherwise the call should be logged normally inside the 25 minutes limit
                         sum += realDuration;
+                        sb.append("\n " + number + ": " + realDuration);
                     }
                 }
-
-                sb.append("\n " + number + ": " + realDuration);
             }
         }
 
